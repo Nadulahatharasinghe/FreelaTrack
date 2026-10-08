@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { DollarSign, Plus, Calendar, CreditCard, Wallet, Trash2, TrendingUp } from 'lucide-react';
 import './Income.css';
 
 const Income = () => {
@@ -13,6 +14,7 @@ const Income = () => {
     paymentMethod: 'Cash'
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchPayments();
@@ -25,6 +27,8 @@ const Income = () => {
       setPayments(response.data);
     } catch (error) {
       console.error('Error fetching payments:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,23 +115,70 @@ const Income = () => {
     }
   };
 
+  const getPaymentMethodIcon = (method) => {
+    switch (method) {
+      case 'Cash':
+        return <Wallet size={16} />;
+      case 'Bank Transfer':
+        return <CreditCard size={16} />;
+      case 'Card':
+        return <CreditCard size={16} />;
+      default:
+        return <DollarSign size={16} />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="income-page">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Loading income data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="income-page">
       <div className="page-header">
-        <h1>Income</h1>
+        <div className="header-content">
+          <div className="header-icon">
+            <DollarSign size={32} />
+          </div>
+          <div>
+            <h1>Income & Payments</h1>
+            <p className="page-subtitle">Track your freelance earnings and payment history.</p>
+          </div>
+        </div>
         <button className="btn btn-primary" onClick={handleOpenModal}>
+          <Plus size={20} />
           Add Payment
         </button>
       </div>
 
-      <div className="total-income-card">
-        <h2>Total Income</h2>
-        <p className="total-amount">Rs. {totalIncome.toLocaleString()}</p>
+      <div className="income-card">
+        <div className="income-card-content">
+          <div className="income-icon">
+            <TrendingUp size={32} />
+          </div>
+          <div className="income-details">
+            <h2>Total Income</h2>
+            <p className="total-amount">Rs. {totalIncome.toLocaleString()}</p>
+            <p className="income-subtitle">Total earnings from all projects</p>
+          </div>
+        </div>
       </div>
 
       {payments.length === 0 ? (
         <div className="empty-state">
-          <p>No payments yet. Click "Add Payment" to get started.</p>
+          <DollarSign size={64} className="empty-icon" />
+          <h3>No payments yet</h3>
+          <p>Add your first payment to start tracking your income.</p>
+          <button className="btn btn-primary" onClick={handleOpenModal}>
+            <Plus size={20} />
+            Add Payment
+          </button>
         </div>
       ) : (
         <div className="table-container">
@@ -144,17 +195,42 @@ const Income = () => {
             <tbody>
               {payments.map((payment) => (
                 <tr key={payment._id}>
-                  <td>{payment.project?.projectName || 'N/A'}</td>
-                  <td>Rs. {payment.amount.toLocaleString()}</td>
-                  <td>{new Date(payment.paymentDate).toLocaleDateString()}</td>
-                  <td>{payment.paymentMethod}</td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(payment._id)}
-                    >
-                      Delete
-                    </button>
+                    <div className="project-name-cell">
+                      <div className="project-icon">
+                        <DollarSign size={18} />
+                      </div>
+                      <span className="project-name">{payment.project?.projectName || 'N/A'}</span>
+                    </div>
+                  </td>
+                  <td className="amount">
+                    <DollarSign size={14} className="amount-icon" />
+                    {payment.amount.toLocaleString()}
+                  </td>
+                  <td>
+                    <div className="date-cell">
+                      <Calendar size={14} className="date-icon" />
+                      {new Date(payment.paymentDate).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="payment-method-cell">
+                      <span className="payment-method-icon">
+                        {getPaymentMethodIcon(payment.paymentMethod)}
+                      </span>
+                      <span>{payment.paymentMethod}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(payment._id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -166,59 +242,79 @@ const Income = () => {
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Add Payment</h2>
-            {error && <div className="error-message">{error}</div>}
-            <form onSubmit={handleSubmit}>
+            <div className="modal-header">
+              <h2>Add Payment</h2>
+              <button className="modal-close" onClick={handleCloseModal}>
+                ✕
+              </button>
+            </div>
+            {error && (
+              <div className="error-alert">
+                <span>{error}</span>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="modal-form">
               <div className="form-group">
                 <label>Project *</label>
-                <select
-                  name="project"
-                  value={formData.project}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select a project</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.projectName}
-                    </option>
-                  ))}
-                </select>
+                <div className="input-wrapper">
+                  <select
+                    name="project"
+                    value={formData.project}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select a project</option>
+                    {projects.map((project) => (
+                      <option key={project._id} value={project._id}>
+                        {project.projectName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="form-group">
                 <label>Amount (Rs.) *</label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  min="0.01"
-                  step="0.01"
-                  required
-                />
+                <div className="input-wrapper">
+                  <DollarSign size={20} className="input-icon" />
+                  <input
+                    type="number"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Payment Date *</label>
-                <input
-                  type="date"
-                  name="paymentDate"
-                  value={formData.paymentDate}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="input-wrapper">
+                  <Calendar size={20} className="input-icon" />
+                  <input
+                    type="date"
+                    name="paymentDate"
+                    value={formData.paymentDate}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Payment Method *</label>
-                <select
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Card">Card</option>
-                </select>
+                <div className="input-wrapper">
+                  <select
+                    name="paymentMethod"
+                    value={formData.paymentMethod}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Card">Card</option>
+                  </select>
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>

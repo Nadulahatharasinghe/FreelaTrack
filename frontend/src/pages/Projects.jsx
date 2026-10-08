@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { FolderKanban, Plus, Search, Edit, Trash2, Calendar, DollarSign, Filter } from 'lucide-react';
 import './Projects.css';
 
 const Projects = () => {
@@ -19,6 +20,7 @@ const Projects = () => {
     dueDate: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProjects();
@@ -31,6 +33,8 @@ const Projects = () => {
       setProjects(response.data);
     } catch (error) {
       console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,57 +161,92 @@ const Projects = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="projects-page">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="projects-page">
       <div className="page-header">
-        <h1>Projects</h1>
+        <div className="header-content">
+          <div className="header-icon">
+            <FolderKanban size={32} />
+          </div>
+          <div>
+            <h1>Projects</h1>
+            <p className="page-subtitle">Track your freelance work and project progress.</p>
+          </div>
+        </div>
         <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+          <Plus size={20} />
           Add Project
         </button>
       </div>
 
-      <div className="filters">
-        <input
-          type="text"
-          placeholder="Search by project name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="filter-select"
-        >
-          <option value="All">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Pending">Pending</option>
-          <option value="Completed">Completed</option>
-        </select>
-        <select
-          value={clientFilter}
-          onChange={(e) => setClientFilter(e.target.value)}
-          className="filter-select"
-        >
-          <option value="All">All Clients</option>
-          {clients.map((client) => (
-            <option key={client._id} value={client._id}>
-              {client.name}
-            </option>
-          ))}
-        </select>
+      <div className="filters-section">
+        <div className="search-wrapper">
+          <Search size={20} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
+        <div className="filter-wrapper">
+          <Filter size={20} className="filter-icon" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="All">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div className="filter-wrapper">
+          <Filter size={20} className="filter-icon" />
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="All">All Clients</option>
+            {clients.map((client) => (
+              <option key={client._id} value={client._id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {filteredProjects.length === 0 ? (
         <div className="empty-state">
-          <p>No projects found.</p>
+          <FolderKanban size={64} className="empty-icon" />
+          <h3>No projects found</h3>
+          <p>Create your first project to start tracking your work.</p>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            <Plus size={20} />
+            Add Project
+          </button>
         </div>
       ) : (
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Project Name</th>
+                <th>Project</th>
                 <th>Client</th>
                 <th>Status</th>
                 <th>Fee</th>
@@ -222,30 +261,59 @@ const Projects = () => {
                 const pending = project.fee - project.paidAmount;
                 return (
                   <tr key={project._id}>
-                    <td>{project.projectName}</td>
+                    <td>
+                      <div className="project-name-cell">
+                        <div className="project-icon">
+                          <FolderKanban size={20} />
+                        </div>
+                        <span className="project-name">{project.projectName}</span>
+                      </div>
+                    </td>
                     <td>{project.client?.name || 'N/A'}</td>
                     <td>
-                      <span className={`status status-${project.status.toLowerCase()}`}>
+                      <span className={`status-badge status-${project.status.toLowerCase()}`}>
                         {project.status}
                       </span>
                     </td>
-                    <td>Rs. {project.fee.toLocaleString()}</td>
-                    <td>Rs. {project.paidAmount.toLocaleString()}</td>
-                    <td>Rs. {pending.toLocaleString()}</td>
-                    <td>{project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '-'}</td>
+                    <td className="amount">
+                      <DollarSign size={14} className="amount-icon" />
+                      {project.fee.toLocaleString()}
+                    </td>
+                    <td className="amount">
+                      <DollarSign size={14} className="amount-icon" />
+                      {project.paidAmount.toLocaleString()}
+                    </td>
+                    <td className="amount amount-pending">
+                      <DollarSign size={14} className="amount-icon" />
+                      {pending.toLocaleString()}
+                    </td>
                     <td>
-                      <button
-                        className="btn btn-sm btn-secondary"
-                        onClick={() => handleOpenModal(project)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(project._id)}
-                      >
-                        Delete
-                      </button>
+                      {project.dueDate ? (
+                        <div className="date-cell">
+                          <Calendar size={14} className="date-icon" />
+                          {new Date(project.dueDate).toLocaleDateString()}
+                        </div>
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => handleOpenModal(project)}
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(project._id)}
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -258,85 +326,115 @@ const Projects = () => {
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingProject ? 'Edit Project' : 'Add Project'}</h2>
-            {error && <div className="error-message">{error}</div>}
-            <form onSubmit={handleSubmit}>
+            <div className="modal-header">
+              <h2>{editingProject ? 'Edit Project' : 'Add Project'}</h2>
+              <button className="modal-close" onClick={handleCloseModal}>
+                ✕
+              </button>
+            </div>
+            {error && (
+              <div className="error-alert">
+                <span>{error}</span>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="modal-form">
               <div className="form-group">
                 <label>Project Name *</label>
-                <input
-                  type="text"
-                  name="projectName"
-                  value={formData.projectName}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="input-wrapper">
+                  <FolderKanban size={20} className="input-icon" />
+                  <input
+                    type="text"
+                    name="projectName"
+                    value={formData.projectName}
+                    onChange={handleChange}
+                    placeholder="Enter project name"
+                    required
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Client *</label>
-                <select
-                  name="client"
-                  value={formData.client}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select a client</option>
-                  {clients.map((client) => (
-                    <option key={client._id} value={client._id}>
-                      {client.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="input-wrapper">
+                  <select
+                    name="client"
+                    value={formData.client}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select a client</option>
+                    {clients.map((client) => (
+                      <option key={client._id} value={client._id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="form-group">
                 <label>Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Completed">Completed</option>
-                </select>
+                <div className="input-wrapper">
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Fee (Rs.) *</label>
-                <input
-                  type="number"
-                  name="fee"
-                  value={formData.fee}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Paid Amount (Rs.)</label>
-                <input
-                  type="number"
-                  name="paidAmount"
-                  value={formData.paidAmount}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Fee (Rs.) *</label>
+                  <div className="input-wrapper">
+                    <DollarSign size={20} className="input-icon" />
+                    <input
+                      type="number"
+                      name="fee"
+                      value={formData.fee}
+                      onChange={handleChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Paid Amount (Rs.)</label>
+                  <div className="input-wrapper">
+                    <DollarSign size={20} className="input-icon" />
+                    <input
+                      type="number"
+                      name="paidAmount"
+                      value={formData.paidAmount}
+                      onChange={handleChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="form-group">
                 <label>Due Date</label>
-                <input
-                  type="date"
-                  name="dueDate"
-                  value={formData.dueDate}
-                  onChange={handleChange}
-                />
+                <div className="input-wrapper">
+                  <Calendar size={20} className="input-icon" />
+                  <input
+                    type="date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {editingProject ? 'Update' : 'Add'}
+                  {editingProject ? 'Update' : 'Add Project'}
                 </button>
               </div>
             </form>
