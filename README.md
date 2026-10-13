@@ -204,14 +204,3 @@ The frontend will run on `http://localhost:5173`
 ### Dashboard
 - `GET /api/dashboard` - Get dashboard statistics (protected)
 
-## Screenshots
-
-*Add screenshots of the application here*
-
-## Author
-
-[Your Name]
-
-## License
-
-ISC
